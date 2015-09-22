@@ -18,6 +18,8 @@ import com.google.atap.tangoservice.TangoXyzIjData;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothDevice;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -50,9 +52,11 @@ public class MainActivity extends Activity {
     private boolean mIsProcessing = false;
 
     WifiManager wifi;
-    WifiScanReceiver wifiReceiver;
+    WifiScanReceiver wifiScanReceiver;
     String wifis[];
     TangoPoseData current_pose;
+    BLeScanCallback bLEScanCallback;
+    BluetoothAdapter mBluetoothAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -73,8 +77,14 @@ public class MainActivity extends Activity {
 
         //WIFI stuff
         wifi=(WifiManager)getSystemService(Context.WIFI_SERVICE);
-        wifiReceiver = new WifiScanReceiver();
+        wifiScanReceiver = new WifiScanReceiver();
         wifi.startScan();
+
+        //BT stuff
+        mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+        if (mBluetoothAdapter != null) {
+            bLEScanCallback = new BLeScanCallback();
+        }
     }
 
     @Override
@@ -83,12 +93,37 @@ public class MainActivity extends Activity {
         // Lock the Tango configuration and reconnect to the service each time
         // the app
         // is brought to the foreground.
-        registerReceiver(wifiReceiver, new IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION));
+
+        registerReceiver(wifiScanReceiver, new IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION));
+
+        if (mBluetoothAdapter != null) {
+            mBluetoothAdapter.startLeScan(bLEScanCallback);
+        }
 
         if (!mIsTangoServiceConnected) {
             startActivityForResult(
                     Tango.getRequestPermissionIntent(Tango.PERMISSIONTYPE_MOTION_TRACKING),
                     Tango.TANGO_INTENT_ACTIVITYCODE);
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        // When the app is pushed to the background, unlock the Tango
+        // configuration and disconnect
+        // from the service so that other apps will behave properly.
+        unregisterReceiver(wifiScanReceiver);
+        if (mBluetoothAdapter != null) {
+            mBluetoothAdapter.stopLeScan(bLEScanCallback);
+        }
+
+        try {
+            mTango.disconnect();
+            mIsTangoServiceConnected = false;
+        } catch (TangoErrorException e) {
+            Toast.makeText(getApplicationContext(), "Tango Error!",
+                    Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -123,28 +158,6 @@ public class MainActivity extends Activity {
                         .show();
             }
         }
-    }
-
-    @Override
-    protected void onPause() {
-        super.onPause();
-        // When the app is pushed to the background, unlock the Tango
-        // configuration and disconnect
-        // from the service so that other apps will behave properly.
-        unregisterReceiver(wifiReceiver);
-
-        try {
-            mTango.disconnect();
-            mIsTangoServiceConnected = false;
-        } catch (TangoErrorException e) {
-            Toast.makeText(getApplicationContext(), "Tango Error!",
-                    Toast.LENGTH_SHORT).show();
-        }
-    }
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
     }
 
     private void setTangoListeners() {
@@ -240,11 +253,17 @@ public class MainActivity extends Activity {
             for(int i = 0; i < wifiScanList.size(); i++){
 //                wifis[i] = ((wifiScanList.get(i)).toString());
                 ScanResult result = wifiScanList.get(i);
-                wifis[i] = result.SSID + " " + result.timestamp + " " + result.level;
+                wifis[i] = "WIFI: " + result.SSID + " " + result.timestamp + " " + result.level;
                 Log.i("MainActivity", wifis[i]);
             }
             wifi.startScan();
         }
     }
 
+    private class BLeScanCallback implements BluetoothAdapter.LeScanCallback {
+        @Override
+        public void onLeScan(BluetoothDevice device, int rssi, byte[] scanRecord) {
+            Log.i(TAG, "BT: " + device.getAddress() + ", RSSI: " + rssi + "\n");
+        }
+    }
 }
