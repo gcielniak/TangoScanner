@@ -52,6 +52,14 @@ class Scan
     public String mac_address;
     public long timestamp;
     public double value;
+    public double[] translation;
+    public double[] rotation;
+
+    Scan()
+    {
+        translation = new double[3];
+        rotation = new double[4];
+    }
 
     public boolean equals (Object o)
     {
@@ -69,9 +77,13 @@ class Scan
             _name = name;
 
         if (device_type == DeviceType.BT_BEACON)
-            return new String("BT: t=" + timestamp + " n=\"" + _name + "\" a=" + mac_address + " v=" + value);
+            return new String("BT: t=" + timestamp + " n=\"" + _name + "\" a=" + mac_address + " v=" + value +
+                    " p=" + translation[0] + " " + translation[1] + " " + translation[2] +
+                    " r=" + rotation[0] + " " + rotation[1] + " " + rotation[2] + " " + rotation[3]);
         else
-            return new String("WF: t=" + timestamp + " n=\"" + _name + "\" a=" + mac_address + " v=" + value);
+            return new String("WF: t=" + timestamp + " n=\"" + _name + "\" a=" + mac_address + " v=" + value +
+                    " p=" + translation[0] + " " + translation[1] + " " + translation[2] +
+                    " r=" + rotation[0] + " " + rotation[1] + " " + rotation[2] + " " + rotation[3]);
     }
 };
 
@@ -142,6 +154,9 @@ public class MainActivity extends Activity {
         if (mBluetoothAdapter != null) {
             bLEScanCallback = new BLeScanCallback();
         }
+
+        current_pose = new TangoPoseData();
+
     }
 
     @Override
@@ -316,22 +331,6 @@ public class MainActivity extends Activity {
         public void onReceive(Context c, Intent intent) {
             List<ScanResult> wifiScanList = wifi.getScanResults();
 
-            if (current_pose != null)
-            {
-            // Format Translation and Rotation data
-            final String translationMsg = String.format(sTranslationFormat,
-                    current_pose.translation[0], current_pose.translation[1],
-                    current_pose.translation[2]);
-            final String rotationMsg = String.format(sRotationFormat,
-                    current_pose.rotation[0], current_pose.rotation[1], current_pose.rotation[2],
-                    current_pose.rotation[3]);
-
-            // Output to LogCat
-            String logMsg = translationMsg + " | " + rotationMsg;
-            Log.i(TAG, logMsg);
-
-            }
-
             for(int i = 0; i < wifiScanList.size(); i++){
                 ScanResult result = wifiScanList.get(i);
 
@@ -341,6 +340,8 @@ public class MainActivity extends Activity {
                 scan.name = result.SSID;
                 scan.timestamp = result.timestamp;
                 scan.value = (double)result.level;
+                scan.translation = current_pose.translation;
+                scan.rotation = current_pose.rotation;
 
                 int indx = current_scan.indexOf(scan);
                 if (indx != -1) {
@@ -374,6 +375,8 @@ public class MainActivity extends Activity {
             scan.name = device.getName();
             scan.timestamp = SystemClock.elapsedRealtimeNanos()/1000;
             scan.value = (double)rssi;
+            scan.translation = current_pose.translation;
+            scan.rotation = current_pose.rotation;
 
             int indx = current_scan.indexOf(scan);
             if (indx != -1) {
