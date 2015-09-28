@@ -35,8 +35,10 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.os.SystemClock;
 import android.util.Log;
+import android.widget.CompoundButton;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.ToggleButton;
 
 
 enum DeviceType
@@ -102,6 +104,11 @@ public class MainActivity extends Activity {
 
     private TextView mTranslationTextView;
     private TextView mRotationTextView;
+    private ToggleButton wifiToggleButton;
+    private ToggleButton btToggleButton;
+
+    private boolean use_wifi;
+    private boolean use_bt;
 
     private Tango mTango;
     private TangoConfig mConfig;
@@ -123,8 +130,13 @@ public class MainActivity extends Activity {
 
         mTranslationTextView = (TextView) findViewById(R.id.translation_text_view);
         mRotationTextView = (TextView) findViewById(R.id.rotation_text_view);
+        wifiToggleButton = (ToggleButton) findViewById(R.id.wifi_toogle_button);
+        btToggleButton = (ToggleButton) findViewById(R.id.bt_toogle_button);
 
         current_scan = new ArrayList<Scan>();
+
+        use_wifi = false;
+        use_bt = true;
 
         // Instantiate Tango client
         try
@@ -143,10 +155,8 @@ public class MainActivity extends Activity {
 
         //WIFI stuff
         wifi=(WifiManager)getSystemService(Context.WIFI_SERVICE);
-        if (wifi != null)
-        {
+        if (wifi != null) {
             wifiScanReceiver = new WifiScanReceiver();
-            wifi.startScan();
         }
 
         //BT stuff
@@ -166,10 +176,13 @@ public class MainActivity extends Activity {
         // the app
         // is brought to the foreground.
 
-        if (wifiScanReceiver != null)
+        if ((wifiScanReceiver != null) && use_wifi)
+        {
+            wifi.startScan();
             registerReceiver(wifiScanReceiver, new IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION));
+        }
 
-        if (mBluetoothAdapter != null)
+        if ((mBluetoothAdapter != null) && use_bt)
             mBluetoothAdapter.startLeScan(bLEScanCallback);
 
         if ((mTango != null) &&!mIsTangoServiceConnected) {
@@ -194,10 +207,10 @@ public class MainActivity extends Activity {
         // When the app is pushed to the background, unlock the Tango
         // configuration and disconnect
         // from the service so that other apps will behave properly.
-        if (wifiScanReceiver != null)
+        if ((wifiScanReceiver != null) && use_wifi)
             unregisterReceiver(wifiScanReceiver);
 
-        if (mBluetoothAdapter != null)
+        if ((mBluetoothAdapter != null) && use_bt)
             mBluetoothAdapter.stopLeScan(bLEScanCallback);
 
         if (mTango != null)
@@ -215,7 +228,8 @@ public class MainActivity extends Activity {
         if (log_file_writer != null)
         {
             try { log_file_writer.close(); }
-            catch (IOException exc) { Log.i("TAG", "Error opening the file: " + log_file.getAbsolutePath()); }
+            catch (IOException exc) {
+                Log.i("TAG", "Error opening the file: " + log_file.getAbsolutePath()); }
 
             MediaScannerConnection.scanFile(MainActivity.this,
                     new String[]{log_file.getAbsolutePath()}, null,

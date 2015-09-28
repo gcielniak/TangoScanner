@@ -14,4 +14,20 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content" />
 
+    <ToggleButton
+        android:id="@+id/wifi_toogle_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textOn="Wifi On"
+        android:textOff="Wifi Off"
+        />
+
+    <ToggleButton
+        android:id="@+id/bt_toogle_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textOn="BT On"
+        android:textOff="BT Off"
+        />
+
 </LinearLayout>
