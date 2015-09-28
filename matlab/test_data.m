@@ -1,5 +1,5 @@
-%path = 'H:\gcielniak\Downloads\wifi_bt_log_20150928T173444.0044.txt';
-path = 'H:\gcielniak\Downloads\wifi_bt_log_20150928T173202.0002.txt';
+path = 'H:\gcielniak\Downloads\wifi_bt_log_20150928T173444.0044.txt';
+%path = 'H:\gcielniak\Downloads\wifi_bt_log_20150928T173202.0002.txt';
 
 fid = fopen(path,'rt');
 
@@ -35,7 +35,7 @@ max_x = max(xyz(1,:));
 min_y = min(xyz(2,:));
 max_y = max(xyz(2,:));
 res = 0.05;
-d_t = 0.25;
+d_t = 0.5;
 
 width = round((max_x-min_x)/res);
 height = round((max_y-min_y)/res);
@@ -54,10 +54,18 @@ for ii=1:size(ss,1)
         dx = (x_loc-xx);
         dy = (y_loc-yy);
         d = sqrt(dx.*dx+dy.*dy);
+        w = zeros(1,length(d));
         ind_d = find(d < d_t);
-        ss(ii,jj) = mean(vv(ind_d));        
+        if length(ind_d)
+%            w(ind_d) = 1;%uniform kernel
+            w(ind_d) = 1-d(ind_d)/d_t;%triangular
+            w=w/sum(w);
+            ss(ii,jj) = sum(w.*vv);
+        else
+            ss(ii,jj) = min_v;
+        end
     end
 end
 
-subplot(6,5,i); imshow(flipud(ss'),[min_v max_v]);colormap('jet');colorbar;title(sprintf('%s - %s',n{ind(1)},uni_labels{i}));
+subplot(ceil(sqrt(size(uni_labels,2))),ceil(sqrt(size(uni_labels,2))),i); imshow(flipud(ss'),[min_v max_v]);colormap('jet');colorbar;title(sprintf('%s - %s',n{ind(1)},uni_labels{i}));
 end
