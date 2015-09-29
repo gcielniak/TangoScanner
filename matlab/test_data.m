@@ -1,5 +1,6 @@
-path = 'H:\gcielniak\Downloads\wifi_bt_log_20150928T173444.0044.txt';
+%path = 'H:\gcielniak\Downloads\wifi_bt_log_20150928T173444.0044.txt';
 %path = 'H:\gcielniak\Downloads\wifi_bt_log_20150928T173202.0002.txt';
+path = 'H:\gcielniak\Google Drive (work)\beacon_logs\wifi_bt_log_20150929T105152.0052.txt';
 
 fid = fopen(path,'rt');
 
@@ -27,6 +28,36 @@ fclose(fid);
 
 xyz = [pos{:}];
 uni_labels = unique(a);
+lab_value = [];
+
+for g=1:length(uni_labels)
+    lab_value(g) = hex2dec(strrep(uni_labels{g},':',''));
+end
+
+new_lab = sort(lab_value);
+ind = find(diff(new_lab)==1);
+
+for g=ind
+    sg = sprintf('%012X',new_lab(g));
+    sg = [sg(1:2),':',sg(3:4),':',sg(5:6),':',sg(7:8),':',sg(9:10),':',sg(11:12)];
+    sg1 = sprintf('%012X',new_lab(g+1));
+    sg1 = [sg1(1:2),':',sg1(3:4),':',sg1(5:6),':',sg1(7:8),':',sg1(9:10),':',sg1(11:12)];
+    ind = find(not(cellfun('isempty', strfind(a,sg1))));
+    a(ind) = {sg};
+    
+    new_lab(g+1) = new_lab(g);
+end
+
+new_lab = unique(new_lab);
+
+new_lab_s = [];
+
+for g=1:length(new_lab)
+    s = sprintf('%012X',new_lab(g));
+    new_lab_s{g} = [s(1:2),':',s(3:4),':',s(5:6),':',s(7:8),':',s(9:10),':',s(11:12)];
+end
+
+uni_labels = new_lab_s;
 
 min_v = min([v{:}]);
 max_v = max([v{:}]);
@@ -34,7 +65,7 @@ min_x = min(xyz(1,:));
 max_x = max(xyz(1,:));
 min_y = min(xyz(2,:));
 max_y = max(xyz(2,:));
-res = 0.05;
+res = 0.1;
 d_t = 0.5;
 
 width = round((max_x-min_x)/res);
