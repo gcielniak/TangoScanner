@@ -35,20 +35,19 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.os.SystemClock;
 import android.util.Log;
+import android.view.View;
 import android.widget.CompoundButton;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ToggleButton;
 
 
-enum DeviceType
-{
+enum DeviceType {
     BT_BEACON,
     WIFI_AP
 };
 
-class Scan
-{
+class Scan {
     public DeviceType device_type;
     public String name;
     public String mac_address;
@@ -57,16 +56,14 @@ class Scan
     public double[] translation;
     public double[] rotation;
 
-    Scan()
-    {
+    Scan() {
         translation = new double[3];
         rotation = new double[4];
     }
 
-    public boolean equals (Object o)
-    {
+    public boolean equals(Object o) {
         if (o instanceof Scan)
-            return this.mac_address.equals(((Scan)o).mac_address);
+            return this.mac_address.equals(((Scan) o).mac_address);
 
         return false;
     }
@@ -104,11 +101,9 @@ public class MainActivity extends Activity {
 
     private TextView mTranslationTextView;
     private TextView mRotationTextView;
+    private ToggleButton startToggleButton;
     private ToggleButton wifiToggleButton;
     private ToggleButton btToggleButton;
-
-    private boolean use_wifi;
-    private boolean use_bt;
 
     private Tango mTango;
     private TangoConfig mConfig;
@@ -130,31 +125,29 @@ public class MainActivity extends Activity {
 
         mTranslationTextView = (TextView) findViewById(R.id.translation_text_view);
         mRotationTextView = (TextView) findViewById(R.id.rotation_text_view);
+        startToggleButton = (ToggleButton) findViewById(R.id.start_toogle_button);
         wifiToggleButton = (ToggleButton) findViewById(R.id.wifi_toogle_button);
         btToggleButton = (ToggleButton) findViewById(R.id.bt_toogle_button);
+        startToggleButton.setOnCheckedChangeListener(new StartOnCheckedChangeListener());
+        wifiToggleButton.setOnCheckedChangeListener(new WifiOnCheckedChangeListener());
+        btToggleButton.setOnCheckedChangeListener(new BTOnCheckedChangeListener());
 
         current_scan = new ArrayList<Scan>();
 
-        use_wifi = false;
-        use_bt = true;
-
         // Instantiate Tango client
-        try
-        {
+        try {
             mTango = new Tango(this);
             // Set up Tango configuration for motion tracking
             // If you want to use other APIs, add more appropriate to the config
             // like: mConfig.putBoolean(TangoConfig.KEY_BOOLEAN_DEPTH, true)
             mConfig = mTango.getConfig(TangoConfig.CONFIG_TYPE_CURRENT);
             mConfig.putBoolean(TangoConfig.KEY_BOOLEAN_MOTIONTRACKING, true);
-        }
-        catch (Throwable exc)
-        {
-            Log.i(TAG,"Could not find the Tango");
+        } catch (Throwable exc) {
+            Log.i(TAG, "Could not find the Tango");
         }
 
         //WIFI stuff
-        wifi=(WifiManager)getSystemService(Context.WIFI_SERVICE);
+        wifi = (WifiManager) getSystemService(Context.WIFI_SERVICE);
         if (wifi != null) {
             wifiScanReceiver = new WifiScanReceiver();
         }
@@ -175,30 +168,6 @@ public class MainActivity extends Activity {
         // Lock the Tango configuration and reconnect to the service each time
         // the app
         // is brought to the foreground.
-
-        if ((wifiScanReceiver != null) && use_wifi)
-        {
-            wifi.startScan();
-            registerReceiver(wifiScanReceiver, new IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION));
-        }
-
-        if ((mBluetoothAdapter != null) && use_bt)
-            mBluetoothAdapter.startLeScan(bLEScanCallback);
-
-        if ((mTango != null) &&!mIsTangoServiceConnected) {
-            startActivityForResult(
-                    Tango.getRequestPermissionIntent(Tango.PERMISSIONTYPE_MOTION_TRACKING),
-                    Tango.TANGO_INTENT_ACTIVITYCODE);
-        }
-
-        try {
-            SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd'T'HHmmss.ssss");
-            Date current_date = new Date();
-            log_file = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), "wifi_bt_log_" + sdf.format(current_date) + ".txt");
-            log_file_writer = new FileWriter(log_file, false);
-            log_file_writer.write(sdf.format(current_date) + "=" + current_date.getTime()*1000);
-        }
-        catch (IOException exc) { Log.i("TAG","Error opening the file: " + log_file.getAbsolutePath()); }
     }
 
     @Override
@@ -207,39 +176,8 @@ public class MainActivity extends Activity {
         // When the app is pushed to the background, unlock the Tango
         // configuration and disconnect
         // from the service so that other apps will behave properly.
-        if ((wifiScanReceiver != null) && use_wifi)
-            unregisterReceiver(wifiScanReceiver);
 
-        if ((mBluetoothAdapter != null) && use_bt)
-            mBluetoothAdapter.stopLeScan(bLEScanCallback);
-
-        if (mTango != null)
-        {
-            try {
-                mTango.disconnect();
-                mIsTangoServiceConnected = false;
-            }
-            catch (TangoErrorException e) {
-                Toast.makeText(getApplicationContext(), "Tango Error!",
-                        Toast.LENGTH_SHORT).show();
-            }
-        }
-
-        if (log_file_writer != null)
-        {
-            try { log_file_writer.close(); }
-            catch (IOException exc) {
-                Log.i("TAG", "Error opening the file: " + log_file.getAbsolutePath()); }
-
-            MediaScannerConnection.scanFile(MainActivity.this,
-                    new String[]{log_file.getAbsolutePath()}, null,
-                    new MediaScannerConnection.OnScanCompletedListener() {
-
-                        public void onScanCompleted(String path, Uri uri) {
-                            Log.i("TAG", "Finished scanning " + path);
-                        }
-                    });
-        }
+        startToggleButton.setChecked(false);
     }
 
     @Override
@@ -254,23 +192,25 @@ public class MainActivity extends Activity {
                 finish();
                 return;
             }
+
             try {
                 setTangoListeners();
             } catch (TangoErrorException e) {
-                Toast.makeText(this, "Tango Error! Restart the app!",
+                Toast.makeText(getApplicationContext(), "Tango Error! Restart the app!",
                         Toast.LENGTH_SHORT).show();
             }
+
             try {
                 mTango.connect(mConfig);
                 mIsTangoServiceConnected = true;
-            } catch (TangoOutOfDateException e) {
-                Toast.makeText(getApplicationContext(),
-                        "Tango Service out of date!", Toast.LENGTH_SHORT)
-                        .show();
-            } catch (TangoErrorException e) {
-                Toast.makeText(getApplicationContext(),
-                        "Tango Error! Restart the app!", Toast.LENGTH_SHORT)
-                        .show();
+            }
+            catch (TangoOutOfDateException e) {
+                Toast.makeText(getApplicationContext(), "Tango Service out of date!",
+                        Toast.LENGTH_SHORT).show();
+            }
+            catch (TangoErrorException e) {
+                Toast.makeText(getApplicationContext(), "Tango Error! Restart the app!",
+                        Toast.LENGTH_SHORT).show();
             }
         }
     }
@@ -345,7 +285,7 @@ public class MainActivity extends Activity {
         public void onReceive(Context c, Intent intent) {
             List<ScanResult> wifiScanList = wifi.getScanResults();
 
-            for(int i = 0; i < wifiScanList.size(); i++){
+            for (int i = 0; i < wifiScanList.size(); i++) {
                 ScanResult result = wifiScanList.get(i);
 
                 Scan scan = new Scan();
@@ -353,7 +293,7 @@ public class MainActivity extends Activity {
                 scan.mac_address = result.BSSID.toUpperCase();
                 scan.name = result.SSID;
                 scan.timestamp = result.timestamp;
-                scan.value = (double)result.level;
+                scan.value = (double) result.level;
                 scan.translation = current_pose.translation;
                 scan.rotation = current_pose.rotation;
 
@@ -367,10 +307,12 @@ public class MainActivity extends Activity {
 
                 Log.i(TAG, scan.toString());
 
-                if (log_file_writer != null)
-                {
-                    try { log_file_writer.write(scan + "\n"); }
-                    catch(IOException exc) { Log.i(TAG, "Error writing to file."); }
+                if (log_file_writer != null) {
+                    try {
+                        log_file_writer.write(scan + "\n");
+                    } catch (IOException exc) {
+                        Log.i(TAG, "Error writing to file.");
+                    }
                 }
             }
             wifi.startScan();
@@ -380,15 +322,13 @@ public class MainActivity extends Activity {
     private class BLeScanCallback implements BluetoothAdapter.LeScanCallback {
         @Override
         public void onLeScan(BluetoothDevice device, int rssi, byte[] scanRecord) {
-            if (device.getType() != BluetoothDevice.DEVICE_TYPE_LE)
-                Log.i(TAG,"Danger!");
 
             Scan scan = new Scan();
             scan.device_type = DeviceType.BT_BEACON;
             scan.mac_address = device.getAddress();
             scan.name = device.getName();
-            scan.timestamp = SystemClock.elapsedRealtimeNanos()/1000;
-            scan.value = (double)rssi;
+            scan.timestamp = SystemClock.elapsedRealtimeNanos() / 1000;
+            scan.value = (double) rssi;
             scan.translation = current_pose.translation;
             scan.rotation = current_pose.rotation;
 
@@ -399,10 +339,112 @@ public class MainActivity extends Activity {
             current_scan.add(scan);
 
             Log.i(TAG, scan.toString());
-            if (log_file_writer != null)
-            {
-                try { log_file_writer.write(scan + "\n"); }
-                catch(IOException exc) { Log.i(TAG, "Error writing to file."); }
+            if (log_file_writer != null) {
+                try {
+                    log_file_writer.write(scan + "\n");
+                } catch (IOException exc) {
+                    Log.i(TAG, "Error writing to file.");
+                }
+            }
+        }
+    }
+
+    public class StartOnCheckedChangeListener implements CompoundButton.OnCheckedChangeListener {
+        @Override
+        public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+            if (isChecked) {
+                //tango
+                if ((mTango != null) && !mIsTangoServiceConnected) {
+                    startActivityForResult(
+                            Tango.getRequestPermissionIntent(Tango.PERMISSIONTYPE_MOTION_TRACKING),
+                            Tango.TANGO_INTENT_ACTIVITYCODE);
+                }
+
+                //log file
+                try {
+                    SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd'T'HHmmss.ssss");
+                    Date current_date = new Date();
+                    log_file = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
+                            "wifi_bt_log_" + sdf.format(current_date) + ".txt");
+                    log_file_writer = new FileWriter(log_file, false);
+                    log_file_writer.write(sdf.format(current_date) + "=" + current_date.getTime() * 1000 + '\n');
+                } catch (IOException exc) {
+                    Log.i("TAG", "Error opening file: " + log_file.getAbsolutePath());
+                }
+
+                //wifi
+                if (wifiToggleButton.isChecked()) {
+                    registerReceiver(wifiScanReceiver, new IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION));
+                    wifi.startScan();
+                }
+
+                //bluetooth
+                if (btToggleButton.isChecked())
+                    mBluetoothAdapter.startLeScan(bLEScanCallback);
+            } else {
+                //tango
+                if (mTango != null) {
+                    try {
+                        mTango.disconnect();
+                        mIsTangoServiceConnected = false;
+                    }
+                    catch (TangoErrorException e) {
+                        Toast.makeText(getApplicationContext(), "Tango Error!",
+                                Toast.LENGTH_SHORT).show();
+                    }
+                }
+
+                //log file
+                try {
+                    log_file_writer.close();
+                } catch (IOException exc) {
+                    Log.i("TAG", "Error opening the file: " + log_file.getAbsolutePath());
+                }
+
+                MediaScannerConnection.scanFile(MainActivity.this,
+                        new String[]{log_file.getAbsolutePath()}, null,
+                        new MediaScannerConnection.OnScanCompletedListener() {
+
+                            public void onScanCompleted(String path, Uri uri) {
+                                Log.i("TAG", "Finished scanning " + path);
+                            }
+                        });
+
+                //wifi
+                if (wifiToggleButton.isChecked())
+                    unregisterReceiver(wifiScanReceiver);
+
+                //bluetooth
+                if (btToggleButton.isChecked())
+                    mBluetoothAdapter.stopLeScan(bLEScanCallback);
+            }
+        }
+    }
+
+    public class WifiOnCheckedChangeListener implements CompoundButton.OnCheckedChangeListener {
+        @Override
+        public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+            if (isChecked) {
+                if (startToggleButton.isChecked()) {
+                    registerReceiver(wifiScanReceiver, new IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION));
+                    wifi.startScan();
+                }
+            } else {
+                if (startToggleButton.isChecked())
+                    unregisterReceiver(wifiScanReceiver);
+            }
+        }
+    }
+
+    public class BTOnCheckedChangeListener implements CompoundButton.OnCheckedChangeListener {
+        @Override
+        public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+            if (isChecked) {
+                if (startToggleButton.isChecked())
+                    mBluetoothAdapter.startLeScan(bLEScanCallback);
+            } else {
+                if (startToggleButton.isChecked())
+                    mBluetoothAdapter.stopLeScan(bLEScanCallback);
             }
         }
     }

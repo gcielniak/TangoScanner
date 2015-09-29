@@ -2,7 +2,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical" >
+    android:orientation="vertical"
+    android:gravity="center">
 
     <TextView
         android:id="@+id/translation_text_view"
@@ -14,9 +15,25 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content" />
 
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="horizontal"
+        android:gravity="center">
+
+    <ToggleButton
+        android:id="@+id/start_toogle_button"
+        android:padding="20dp"
+        android:layout_width="100dp"
+        android:layout_height="wrap_content"
+        android:textOn="Stop"
+        android:textOff="Start"
+        />
+
     <ToggleButton
         android:id="@+id/wifi_toogle_button"
-        android:layout_width="wrap_content"
+        android:padding="20dp"
+        android:layout_width="100dp"
         android:layout_height="wrap_content"
         android:textOn="Wifi On"
         android:textOff="Wifi Off"
@@ -24,10 +41,12 @@
 
     <ToggleButton
         android:id="@+id/bt_toogle_button"
-        android:layout_width="wrap_content"
+        android:padding="20dp"
+        android:layout_width="100dp"
         android:layout_height="wrap_content"
         android:textOn="BT On"
         android:textOff="BT Off"
         />
+    </LinearLayout>
 
 </LinearLayout>
