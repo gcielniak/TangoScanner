@@ -367,7 +367,7 @@ public class MainActivity extends Activity {
                     log_file = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
                             "wifi_bt_log_" + sdf.format(current_date) + ".txt");
                     log_file_writer = new FileWriter(log_file, false);
-                    log_file_writer.write(sdf.format(current_date) + "=" + current_date.getTime() * 1000 + '\n');
+                    log_file_writer.write(sdf.format(current_date) + "=" + SystemClock.elapsedRealtimeNanos() / 1000 + '\n');
                 } catch (IOException exc) {
                     Log.i("TAG", "Error opening file: " + log_file.getAbsolutePath());
                 }

@@ -1,13 +1,23 @@
-%path = 'H:\gcielniak\Downloads\wifi_bt_log_20150928T173444.0044.txt';
-%path = 'H:\gcielniak\Downloads\wifi_bt_log_20150928T173202.0002.txt';
-path = 'D:\Google Drive\beacon_logs\wifi_bt_log_20150929T105334.0034.txt';
+path = 'H:\gcielniak\Google Drive (work)\beacon_logs\';
+file_name = [path, 'wifi_bt_log_20150930T171059.0059.txt'];
+ref_file_name = [path, 'wifi_bt_log_20150930T171052.0052.txt'];
+
+%'wifi_bt_log_20150930T170914.0014.txt'
+%'wifi_bt_log_20150930T170909.0009.txt'
+
+%'wifi_bt_log_20150930T171059.0059.txt'
+%'wifi_bt_log_20150930T171052.0052.txt'
+
+%'wifi_bt_log_20150930T171353.0053.txt'
+%'wifi_bt_log_20150930T171345.0045.txt'
 
 %parameters
 resolution = 0.1; % resolution
-kernel_width = 0.5; % kernel width
+kernel_width = 2; % kernel width
 
 %read data
-scan = read_log(path);
+%scan = read_log(ref_file_name);
+scan = read_log_remap(file_name,ref_file_name);
 
 %filter AP addresses
 %scan = group_ap_address(scan);

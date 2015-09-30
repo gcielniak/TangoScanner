@@ -1,4 +1,4 @@
-function scan = read_log(file_name)
+function write_log(scan, file_name)
 
 fid = fopen(file_name,'rt');
 
