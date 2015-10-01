@@ -1,10 +1,9 @@
-function ss = get_ss_map(scan, address, resolution, kernel_width)
+function [ss, cnf] = get_ss_map(scan, address, resolution, kernel_width)
 
 pos = [scan.position];
 address_unique = unique({scan.address});
 
 min_v = min([scan.value]);
-max_v = max([scan.value]);
 min_x = min(pos(1,:));
 max_x = max(pos(1,:));
 min_y = min(pos(2,:));
@@ -16,6 +15,7 @@ height = round((max_y-min_y)/resolution);
 ind = find(not(cellfun('isempty', strfind({scan.address},address))));
 
 ss = zeros(width,height);
+cnf = ones(width,height);
 xx = pos(1,ind);
 yy = pos(2,ind);
 vv = [scan(ind).value];
@@ -37,5 +37,6 @@ for ii=1:size(ss,1)
         else
             ss(ii,jj) = min_v;
         end
+        cnf(ii,jj) = cnf(ii,jj) + length(ind_d);
     end
 end
