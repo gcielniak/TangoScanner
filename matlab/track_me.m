@@ -35,50 +35,59 @@ for i=1:size(address_unique,2)
     [ss{i}, cnf{i}] = get_ss_map(scan,address_unique{i}, resolution, kernel_width);
     cnf{i} = cnf{i}/sum(cnf{i}(:));
     ind = find(not(cellfun('isempty', strfind({scan.address},address_unique{i}))));
-    subplot(ceil(sqrt(size(address_unique,2))),ceil(sqrt(size(address_unique,2))),i); imshow(flipud(ss{i}'),[-100 -50]);colormap('jet');colorbar;title(sprintf('%s - %s',scan(ind(1)).name,address_unique{i}));
-end
-
-figure;
-for i=1:size(address_unique,2)
-    subplot(ceil(sqrt(size(address_unique,2))),ceil(sqrt(size(address_unique,2))),i); imshow(flipud(cnf{i}'),[]);colormap('jet');colorbar;title(sprintf('%s - %s',scan(ind(1)).name,address_unique{i}));
+%    subplot(ceil(sqrt(size(address_unique,2))),ceil(sqrt(size(address_unique,2))),i); imshow(flipud(ss{i}'),[-100 -50]);colormap('jet');colorbar;title(sprintf('%s - %s',scan(ind(1)).name,address_unique{i}));
 end
 
 %%
 file_name_trck = [path, 'wifi_bt_log_20151001T092810.0010.txt'];
 scan_trck = read_log(file_name_trck);
 
-%%
-ii = 1;
-lik = [];
-for i = 1:length(scan_trck)
-    ind = find(not(cellfun('isempty', strfind(address_unique,scan_trck(i).address))));
-    if ~isempty(ind)
-        lik{ii} = 50 - abs(scan_trck(i).value-ss{ind});
-%        lik{ii} = lik{ii}.*cnf{ind};
-        lik{ii} = lik{ii}/sum(lik{ii}(:));
-        i
-        ii = ii + 1;
-    end
-%    imshow(flipud(lik{i}'),[]);
-%    pause(0.1);
-end
-
-%%
 pos = [scan_trck.position];
 min_x = min(pos(1,:));
 max_x = max(pos(1,:));
 min_y = min(pos(2,:));
 max_y = max(pos(2,:));
 
+
+%%
+lik = [];
+for i = 1:length(scan_trck)
+    ind = find(not(cellfun('isempty', strfind(address_unique,scan_trck(i).address))));
+    if ~isempty(ind)
+        lik{i} = 50 - abs(scan_trck(i).value-ss{ind});
+        lik{i} = lik{i}/sum(lik{i}(:));
+        i
+    else
+        lik{i} = ones(size(ss{1}))./length(ss{1}(:));
+    end
+end
+
+%%
 w = 10;
 
-for i = 1:length(lik)-w
+lik_slice = [];
+
+for i=1:length(address_unique)
+    lik_slice{i} = ones(size(ss{1}))./length(ss{1}(:));
+end
+
+for i = 1:length(lik)
+    ind = find(not(cellfun('isempty', strfind(address_unique,scan_trck(i).address))));
+    if isempty(ind)
+        continue
+    end
+    lik_slice{ind} = lik{i};
     est = ones(size(lik{1}));
-    for j = 1:w
+    for j = 1:length(lik_slice)
         est = est.*lik{i+j};
         est = est./sum(est(:));
     end
     imshow(flipud(est'),[]);
+    hold on;
+    i_loc = round((pos(1,i)-min_x)/resolution) + 1;
+    j_loc = size(ss{1},2) - round((pos(2,i)-min_y)/resolution) + 1;
+    plot(i_loc, j_loc, 'r.');
+    hold off;    
     pause(0.01);
 end
 
