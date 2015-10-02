@@ -1,4 +1,4 @@
-path = 'H:\gcielniak\Google Drive (work)\beacon_logs\';
+path = 'D:\Google Drive\beacon_logs\';
 file_name = [path, 'wifi_bt_log_20151001T092647.0047.txt'];
 
 %'wifi_bt_log_20150930T170914.0014.txt'
@@ -11,8 +11,8 @@ file_name = [path, 'wifi_bt_log_20151001T092647.0047.txt'];
 %'wifi_bt_log_20150930T171345.0045.txt'
 
 %parameters
-resolution = 0.5; % resolution
-kernel_width = 2; % kernel width
+resolution = 0.2; % resolution
+kernel_width = 1; % kernel width
 
 %read data
 scan = read_log(file_name);
@@ -32,7 +32,7 @@ ss = [];
 cnf = [];
 
 for i=1:size(address_unique,2)
-    [ss{i}, cnf{i}] = get_ss_map(scan,address_unique{i}, resolution, kernel_width);
+    [ss{i}, cnf{i}] = get_ss_map(scan,address_unique{i}, kernel_width,resolution);
     cnf{i} = cnf{i}/sum(cnf{i}(:));
     ind = find(not(cellfun('isempty', strfind({scan.address},address_unique{i}))));
 %    subplot(ceil(sqrt(size(address_unique,2))),ceil(sqrt(size(address_unique,2))),i); imshow(flipud(ss{i}'),[-100 -50]);colormap('jet');colorbar;title(sprintf('%s - %s',scan(ind(1)).name,address_unique{i}));
@@ -54,12 +54,15 @@ lik = [];
 for i = 1:length(scan_trck)
     ind = find(not(cellfun('isempty', strfind(address_unique,scan_trck(i).address))));
     if ~isempty(ind)
-        lik{i} = 50 - abs(scan_trck(i).value-ss{ind});
+        lik{i} = 120 - abs(scan_trck(i).value-ss{ind});
         lik{i} = lik{i}/sum(lik{i}(:));
         i
     else
         lik{i} = ones(size(ss{1}))./length(ss{1}(:));
     end
+%    subplot(1,2,1); imshow(flipud(lik{i}'),[]);colorbar;
+%    subplot(1,2,2); imshow(flipud(get_likelihood(scan(i),scan,kernel_width,resolution)'),[]);colorbar;
+%    pause;
 end
 
 %%
@@ -76,18 +79,19 @@ for i = 1:length(lik)
     if isempty(ind)
         continue
     end
-    lik_slice{ind} = lik{i};
+%    lik_slice{ind} = lik{i};
+    lik_slice{ind} = get_likelihood(scan_trck(i),scan,kernel_width,resolution);
     est = ones(size(lik{1}));
     for j = 1:length(lik_slice)
-        est = est.*lik{i+j};
+        est = est.*lik_slice{j};
         est = est./sum(est(:));
     end
-    imshow(flipud(est'),[]);
-    hold on;
-    i_loc = round((pos(1,i)-min_x)/resolution) + 1;
-    j_loc = size(ss{1},2) - round((pos(2,i)-min_y)/resolution) + 1;
-    plot(i_loc, j_loc, 'r.');
-    hold off;    
-    pause(0.01);
+    
+    subplot(2,2,1); imshow(flipud(lik{i}'),[0 0.005]);colormap('jet');colorbar;
+    subplot(2,2,2); imshow(flipud(lik_slice{ind}'),[0 0.005]);colormap('jet');colorbar;
+    subplot(2,2,3); imshow(flipud(est'),[0 0.005]);colormap('jet');colorbar;
+    subplot(2,2,4); imshow(flipud(ss{ind}'),[]);colormap('jet');colorbar;
+    pause;
+    i
 end
 

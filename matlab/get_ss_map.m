@@ -1,4 +1,4 @@
-function [ss, cnf] = get_ss_map(scan, address, resolution, kernel_width)
+function [ss, cnf] = get_ss_map(scan, address, kernel_width, resolution)
 
 pos = [scan.position];
 address_unique = unique({scan.address});
