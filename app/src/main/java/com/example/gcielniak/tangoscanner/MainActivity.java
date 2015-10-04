@@ -1,6 +1,5 @@
 package com.example.gcielniak.tangoscanner;
 
-
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -93,8 +92,6 @@ class Scan {
  * {@link TangoConfig}.
  */
 public class MainActivity extends Activity {
-    private List<Scan> current_scan;
-
     private static final String TAG = MainActivity.class.getSimpleName();
     private static final String sTranslationFormat = "Translation: %.2f, %.2f, %.2f";
     private static final String sRotationFormat = "Rotation: %.2f, %.2f, %.2f, %.2f";
@@ -110,13 +107,9 @@ public class MainActivity extends Activity {
     private boolean mIsTangoServiceConnected;
     private boolean mIsProcessing = false;
 
-    WifiManager wifi;
-    WifiScanReceiver wifiScanReceiver;
-    TangoPoseData current_pose;
-    BLeScanCallback bLEScanCallback;
-    BluetoothAdapter mBluetoothAdapter;
-    File log_file;
-    FileWriter log_file_writer;
+    ScanLogger scan_logger;
+    WifiScanner wifi_scanner;
+    BluetoothScanner bluetooth_scanner;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -132,8 +125,6 @@ public class MainActivity extends Activity {
         wifiToggleButton.setOnCheckedChangeListener(new WifiOnCheckedChangeListener());
         btToggleButton.setOnCheckedChangeListener(new BTOnCheckedChangeListener());
 
-        current_scan = new ArrayList<Scan>();
-
         // Instantiate Tango client
         try {
             mTango = new Tango(this);
@@ -146,20 +137,13 @@ public class MainActivity extends Activity {
             Log.i(TAG, "Could not find the Tango");
         }
 
+        scan_logger = new ScanLogger();
+
         //WIFI stuff
-        wifi = (WifiManager) getSystemService(Context.WIFI_SERVICE);
-        if (wifi != null) {
-            wifiScanReceiver = new WifiScanReceiver();
-        }
+        wifi_scanner = new WifiScanner((WifiManager) getSystemService(Context.WIFI_SERVICE), scan_logger);
 
         //BT stuff
-        mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-        if (mBluetoothAdapter != null) {
-            bLEScanCallback = new BLeScanCallback();
-        }
-
-        current_pose = new TangoPoseData();
-
+        bluetooth_scanner = new BluetoothScanner(scan_logger);
     }
 
     @Override
@@ -233,7 +217,8 @@ public class MainActivity extends Activity {
                 }
                 mIsProcessing = true;
 
-                current_pose = pose;
+                wifi_scanner.UpdatePose(pose);
+                bluetooth_scanner.UpdatePose(pose);
 
                 // Format Translation and Rotation data
                 final String translationMsg = String.format(sTranslationFormat,
@@ -281,74 +266,6 @@ public class MainActivity extends Activity {
         });
     }
 
-    private class WifiScanReceiver extends BroadcastReceiver {
-        public void onReceive(Context c, Intent intent) {
-            List<ScanResult> wifiScanList = wifi.getScanResults();
-
-            for (int i = 0; i < wifiScanList.size(); i++) {
-                ScanResult result = wifiScanList.get(i);
-
-                Scan scan = new Scan();
-                scan.device_type = DeviceType.WIFI_AP;
-                scan.mac_address = result.BSSID.toUpperCase();
-                scan.name = result.SSID;
-                scan.timestamp = result.timestamp;
-                scan.value = (double) result.level;
-                scan.translation = current_pose.translation;
-                scan.rotation = current_pose.rotation;
-
-                int indx = current_scan.indexOf(scan);
-                if (indx != -1) {
-                    if (current_scan.get(indx).timestamp == scan.timestamp)
-                        continue;
-                    current_scan.remove(indx);
-                }
-                current_scan.add(scan);
-
-                Log.i(TAG, scan.toString());
-
-                if (log_file_writer != null) {
-                    try {
-                        log_file_writer.write(scan + "\n");
-                    } catch (IOException exc) {
-                        Log.i(TAG, "Error writing to file.");
-                    }
-                }
-            }
-            wifi.startScan();
-        }
-    }
-
-    private class BLeScanCallback implements BluetoothAdapter.LeScanCallback {
-        @Override
-        public void onLeScan(BluetoothDevice device, int rssi, byte[] scanRecord) {
-
-            Scan scan = new Scan();
-            scan.device_type = DeviceType.BT_BEACON;
-            scan.mac_address = device.getAddress();
-            scan.name = device.getName();
-            scan.timestamp = SystemClock.elapsedRealtimeNanos() / 1000;
-            scan.value = (double) rssi;
-            scan.translation = current_pose.translation;
-            scan.rotation = current_pose.rotation;
-
-            int indx = current_scan.indexOf(scan);
-            if (indx != -1) {
-                current_scan.remove(indx);
-            }
-            current_scan.add(scan);
-
-            Log.i(TAG, scan.toString());
-            if (log_file_writer != null) {
-                try {
-                    log_file_writer.write(scan + "\n");
-                } catch (IOException exc) {
-                    Log.i(TAG, "Error writing to file.");
-                }
-            }
-        }
-    }
-
     public class StartOnCheckedChangeListener implements CompoundButton.OnCheckedChangeListener {
         @Override
         public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
@@ -360,27 +277,15 @@ public class MainActivity extends Activity {
                             Tango.TANGO_INTENT_ACTIVITYCODE);
                 }
 
-                //log file
-                try {
-                    SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd'T'HHmmss.ssss");
-                    Date current_date = new Date();
-                    log_file = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
-                            "wifi_bt_log_" + sdf.format(current_date) + ".txt");
-                    log_file_writer = new FileWriter(log_file, false);
-                    log_file_writer.write(sdf.format(current_date) + "=" + SystemClock.elapsedRealtimeNanos() / 1000 + '\n');
-                } catch (IOException exc) {
-                    Log.i("TAG", "Error opening file: " + log_file.getAbsolutePath());
-                }
+                scan_logger.Start();
 
                 //wifi
-                if (wifiToggleButton.isChecked()) {
-                    registerReceiver(wifiScanReceiver, new IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION));
-                    wifi.startScan();
-                }
+                if (wifiToggleButton.isChecked())
+                    wifi_scanner.Start(MainActivity.this);
 
                 //bluetooth
                 if (btToggleButton.isChecked())
-                    mBluetoothAdapter.startLeScan(bLEScanCallback);
+                    bluetooth_scanner.Start();
             } else {
                 //tango
                 if (mTango != null) {
@@ -394,29 +299,15 @@ public class MainActivity extends Activity {
                     }
                 }
 
-                //log file
-                try {
-                    log_file_writer.close();
-                } catch (IOException exc) {
-                    Log.i("TAG", "Error opening the file: " + log_file.getAbsolutePath());
-                }
-
-                MediaScannerConnection.scanFile(MainActivity.this,
-                        new String[]{log_file.getAbsolutePath()}, null,
-                        new MediaScannerConnection.OnScanCompletedListener() {
-
-                            public void onScanCompleted(String path, Uri uri) {
-                                Log.i("TAG", "Finished scanning " + path);
-                            }
-                        });
+                scan_logger.Stop(MainActivity.this);
 
                 //wifi
                 if (wifiToggleButton.isChecked())
-                    unregisterReceiver(wifiScanReceiver);
+                    wifi_scanner.Stop(MainActivity.this);
 
                 //bluetooth
                 if (btToggleButton.isChecked())
-                    mBluetoothAdapter.stopLeScan(bLEScanCallback);
+                    bluetooth_scanner.Stop();
             }
         }
     }
@@ -425,13 +316,11 @@ public class MainActivity extends Activity {
         @Override
         public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
             if (isChecked) {
-                if (startToggleButton.isChecked()) {
-                    registerReceiver(wifiScanReceiver, new IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION));
-                    wifi.startScan();
-                }
+                if (startToggleButton.isChecked())
+                    wifi_scanner.Start(MainActivity.this);
             } else {
                 if (startToggleButton.isChecked())
-                    unregisterReceiver(wifiScanReceiver);
+                    wifi_scanner.Stop(MainActivity.this);
             }
         }
     }
@@ -441,10 +330,10 @@ public class MainActivity extends Activity {
         public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
             if (isChecked) {
                 if (startToggleButton.isChecked())
-                    mBluetoothAdapter.startLeScan(bLEScanCallback);
+                    bluetooth_scanner.Start();
             } else {
                 if (startToggleButton.isChecked())
-                    mBluetoothAdapter.stopLeScan(bLEScanCallback);
+                    bluetooth_scanner.Stop();
             }
         }
     }
