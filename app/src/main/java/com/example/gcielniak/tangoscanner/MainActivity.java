@@ -110,6 +110,7 @@ public class MainActivity extends Activity {
     ScanLogger scan_logger;
     WifiScanner wifi_scanner;
     BluetoothScanner bluetooth_scanner;
+    boolean tango_init_phase = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -161,7 +162,10 @@ public class MainActivity extends Activity {
         // configuration and disconnect
         // from the service so that other apps will behave properly.
 
-        startToggleButton.setChecked(false);
+        if (!tango_init_phase)
+            startToggleButton.setChecked(false);
+        else
+            tango_init_phase = false;
     }
 
     @Override
@@ -275,6 +279,7 @@ public class MainActivity extends Activity {
                     startActivityForResult(
                             Tango.getRequestPermissionIntent(Tango.PERMISSIONTYPE_MOTION_TRACKING),
                             Tango.TANGO_INTENT_ACTIVITYCODE);
+                    tango_init_phase = true;
                 }
 
                 scan_logger.Start();
@@ -286,6 +291,7 @@ public class MainActivity extends Activity {
                 //bluetooth
                 if (btToggleButton.isChecked())
                     bluetooth_scanner.Start();
+
             } else {
                 //tango
                 if (mTango != null) {
