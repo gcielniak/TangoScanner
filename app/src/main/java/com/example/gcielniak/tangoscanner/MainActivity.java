@@ -1,12 +1,6 @@
 package com.example.gcielniak.tangoscanner;
 
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
 
 import com.google.atap.tangoservice.Tango;
 import com.google.atap.tangoservice.Tango.OnTangoUpdateListener;
@@ -20,70 +14,13 @@ import com.google.atap.tangoservice.TangoXyzIjData;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
-import android.bluetooth.BluetoothAdapter;
-import android.bluetooth.BluetoothDevice;
-import android.content.BroadcastReceiver;
-import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
-import android.media.MediaScannerConnection;
-import android.net.Uri;
-import android.net.wifi.ScanResult;
-import android.net.wifi.WifiManager;
 import android.os.Bundle;
-import android.os.Environment;
-import android.os.SystemClock;
 import android.util.Log;
-import android.view.View;
 import android.widget.CompoundButton;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ToggleButton;
-
-
-enum DeviceType {
-    BT_BEACON,
-    WIFI_AP
-};
-
-class Scan {
-    public DeviceType device_type;
-    public String name;
-    public String mac_address;
-    public long timestamp;
-    public double value;
-    public double[] translation;
-    public double[] rotation;
-
-    Scan() {
-        translation = new double[3];
-        rotation = new double[4];
-    }
-
-    public boolean equals(Object o) {
-        if (o instanceof Scan)
-            return this.mac_address.equals(((Scan) o).mac_address);
-
-        return false;
-    }
-
-    @Override
-    public String toString() {
-
-        String _name = new String();
-        if (name != null)
-            _name = name;
-
-        if (device_type == DeviceType.BT_BEACON)
-            return new String("BT: t=" + timestamp + " n=\"" + _name + "\" a=" + mac_address + " v=" + value +
-                    " p=" + translation[0] + " " + translation[1] + " " + translation[2] +
-                    " r=" + rotation[0] + " " + rotation[1] + " " + rotation[2] + " " + rotation[3]);
-        else
-            return new String("WF: t=" + timestamp + " n=\"" + _name + "\" a=" + mac_address + " v=" + value +
-                    " p=" + translation[0] + " " + translation[1] + " " + translation[2] +
-                    " r=" + rotation[0] + " " + rotation[1] + " " + rotation[2] + " " + rotation[3]);
-    }
-};
 
 /**
  * Main Activity for the Tango Java Quickstart. Demonstrates establishing a
@@ -141,7 +78,7 @@ public class MainActivity extends Activity {
         scan_logger = new ScanLogger();
 
         //WIFI stuff
-        wifi_scanner = new WifiScanner((WifiManager) getSystemService(Context.WIFI_SERVICE), scan_logger);
+        wifi_scanner = new WifiScanner(this, scan_logger);
 
         //BT stuff
         bluetooth_scanner = new BluetoothScanner(scan_logger);
@@ -286,7 +223,7 @@ public class MainActivity extends Activity {
 
                 //wifi
                 if (wifiToggleButton.isChecked())
-                    wifi_scanner.Start(MainActivity.this);
+                    wifi_scanner.Start();
 
                 //bluetooth
                 if (btToggleButton.isChecked())
@@ -309,7 +246,7 @@ public class MainActivity extends Activity {
 
                 //wifi
                 if (wifiToggleButton.isChecked())
-                    wifi_scanner.Stop(MainActivity.this);
+                    wifi_scanner.Stop();
 
                 //bluetooth
                 if (btToggleButton.isChecked())
@@ -323,10 +260,10 @@ public class MainActivity extends Activity {
         public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
             if (isChecked) {
                 if (startToggleButton.isChecked())
-                    wifi_scanner.Start(MainActivity.this);
+                    wifi_scanner.Start();
             } else {
                 if (startToggleButton.isChecked())
-                    wifi_scanner.Stop(MainActivity.this);
+                    wifi_scanner.Stop();
             }
         }
     }

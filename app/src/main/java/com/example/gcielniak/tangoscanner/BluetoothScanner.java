@@ -20,6 +20,7 @@ public class BluetoothScanner {
     BluetoothScanner(OnScanListener listener) {
         adapter = BluetoothAdapter.getDefaultAdapter();
         receiver = new BluetoothScanReceiver(listener);
+        current_pose = new TangoPoseData();
     }
 
     public void UpdatePose(TangoPoseData current_pose) {

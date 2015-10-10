@@ -18,9 +18,11 @@ public class WifiScanner {
     TangoPoseData current_pose;
     WifiManager wifi;
     WifiScanReceiver receiver;
+    Context context;
 
-    WifiScanner(WifiManager wifi, OnScanListener listener) {
-        this.wifi = wifi;
+    WifiScanner(Context context, OnScanListener listener) {
+        this.context = context;
+        wifi = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
         receiver = new WifiScanReceiver(listener);
         current_pose = new TangoPoseData();
     }
@@ -29,12 +31,12 @@ public class WifiScanner {
         this.current_pose = current_pose;
     }
 
-    public void Start(Context context) {
+    public void Start() {
         context.registerReceiver(receiver, new IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION));
         wifi.startScan();
     }
 
-    public void Stop(Context context) {
+    public void Stop() {
         context.unregisterReceiver(receiver);
     }
 
