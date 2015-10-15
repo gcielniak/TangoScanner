@@ -7,7 +7,7 @@ beacons = read_beacon_settings(beacon_file_name);
 
 %parameters
 resolution = 0.05; % resolution
-kernel_width = 0.5; % kernel width
+kernel_width = 0.2; % kernel width
 
 %read data
 scan = read_log(file_name);
