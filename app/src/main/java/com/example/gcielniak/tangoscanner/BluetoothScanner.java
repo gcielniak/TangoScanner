@@ -5,9 +5,14 @@ import android.bluetooth.BluetoothDevice;
 import android.content.Context;
 import android.content.IntentFilter;
 import android.net.wifi.WifiManager;
+import android.os.ParcelUuid;
 import android.os.SystemClock;
+import android.util.Log;
 
 import com.google.atap.tangoservice.TangoPoseData;
+
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 
 /**
  * Created by gcielniak on 04/10/2015.
@@ -54,6 +59,7 @@ public class BluetoothScanner {
             scan.value = (double) rssi;
             scan.translation = current_pose.translation;
             scan.rotation = current_pose.rotation;
+            scan.uuid = new Scan.UUID(Arrays.copyOfRange(scanRecord,9,29));
 
             listener.onScan(scan);
         }
