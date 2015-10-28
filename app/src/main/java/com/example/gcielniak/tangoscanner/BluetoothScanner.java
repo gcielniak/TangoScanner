@@ -28,6 +28,10 @@ public class BluetoothScanner {
         current_pose = new TangoPoseData();
     }
 
+    public boolean IsEnabled() {
+        return adapter.isEnabled();
+    }
+
     public void UpdatePose(TangoPoseData current_pose) {
         this.current_pose = current_pose;
     }

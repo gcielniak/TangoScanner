@@ -31,6 +31,10 @@ public class WifiScanner {
         this.current_pose = current_pose;
     }
 
+    public boolean IsEnabled() {
+        return wifi.isWifiEnabled();
+    }
+
     public void Start() {
         context.registerReceiver(receiver, new IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION));
         wifi.startScan();

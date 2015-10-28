@@ -276,7 +276,12 @@ public class MainActivity extends Activity {
         @Override
         public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
             if (isChecked) {
-                if (startToggleButton.isChecked())
+                if (!wifi_scanner.IsEnabled()) {
+                    Toast.makeText(getApplicationContext(), "WiFi not enabled!",
+                            Toast.LENGTH_SHORT).show();
+                    buttonView.setChecked(false);
+                }
+                else if (startToggleButton.isChecked())
                     wifi_scanner.Start();
             } else {
                 if (startToggleButton.isChecked())
@@ -289,8 +294,14 @@ public class MainActivity extends Activity {
         @Override
         public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
             if (isChecked) {
-                if (startToggleButton.isChecked())
+                if (!bluetooth_scanner.IsEnabled()) {
+                    Toast.makeText(getApplicationContext(), "Bluetooth not enabled!",
+                            Toast.LENGTH_SHORT).show();
+                    buttonView.setChecked(false);
+                }
+                else if (startToggleButton.isChecked()) {
                     bluetooth_scanner.Start();
+                }
             } else {
                 if (startToggleButton.isChecked())
                     bluetooth_scanner.Stop();
