@@ -48,6 +48,8 @@ public class MainActivity extends Activity {
     WifiScanner wifi_scanner;
     BluetoothScanner bluetooth_scanner;
     boolean tango_init_phase = false;
+    OnScanListener listener;
+    TangoPoseData current_pose;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -82,6 +84,8 @@ public class MainActivity extends Activity {
 
         //BT stuff
         bluetooth_scanner = new BluetoothScanner(scan_logger);
+
+        listener = scan_logger;
     }
 
     @Override
@@ -160,6 +164,7 @@ public class MainActivity extends Activity {
 
                 wifi_scanner.UpdatePose(pose);
                 bluetooth_scanner.UpdatePose(pose);
+                current_pose = pose;
 
                 // Format Translation and Rotation data
                 final String translationMsg = String.format(sTranslationFormat,
@@ -178,6 +183,18 @@ public class MainActivity extends Activity {
                 // it affects the UI, which will cause an error if performed
                 // from the Tango
                 // service thread
+
+                if (!btToggleButton.isChecked() && !wifiToggleButton.isChecked()) {
+                    Scan scan = new Scan();
+                    scan.mac_address = "";
+                    scan.device_type = DeviceType.NO_DEVICE;
+                    scan.translation = current_pose.translation;
+                    scan.rotation = current_pose.rotation;
+                    scan.timestamp = (long)(current_pose.timestamp*1000);
+
+                    listener.onScan(scan);
+                }
+
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
