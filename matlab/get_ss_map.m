@@ -4,10 +4,10 @@ pos = [scan.position];
 address_unique = unique({scan.address});
 
 min_v = min([scan.value]);
-min_x = min(pos(1,:));
-max_x = max(pos(1,:));
-min_y = min(pos(2,:));
-max_y = max(pos(2,:));
+min_x = min(pos(1,:))-kernel_width*2;
+max_x = max(pos(1,:))+kernel_width*2;
+min_y = min(pos(2,:))-kernel_width*2;
+max_y = max(pos(2,:))+kernel_width*2;
 
 width = round((max_x-min_x)/resolution);
 height = round((max_y-min_y)/resolution);
@@ -35,7 +35,8 @@ for ii=1:size(ss,1)
             w=w/sum(w);
             ss(ii,jj) = sum(w.*vv);
         else
-            ss(ii,jj) = min_v;
+%            ss(ii,jj) = min_v;
+            ss(ii,jj) = -120;
         end
         cnf(ii,jj) = cnf(ii,jj) + length(ind_d);
     end

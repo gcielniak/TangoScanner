@@ -1,29 +1,23 @@
 function write_log(scan, file_name)
 
-fid = fopen(file_name,'rt');
+fid = fopen(file_name,'wt+');
 
 if (fid == -1)
     return
 end
 
-%this line will be important for synchronisation
-fgetl(fid);
+fprintf(fid, '%s', scan.sync_line);
+fprintf(fid, '\n');
 
-scan = [];
-i = 1;
-
-while ~feof(fid)
-   scan(i).type = fscanf(fid, '%s', 1);
-   scan(i).type = scan(i).type(1:2);
-   scan(i).timestamp = fscanf(fid, ' t=%ld', 1);
-   name = textscan(fid, ' n=%q');
-   scan(i).name = name{1}{1};   
-   scan(i).address = fscanf(fid, ' a=%s', 1);
-   scan(i).value = fscanf(fid, ' v=%f', 1);
-   scan(i).position = fscanf(fid, ' p=%f %f %f',3);
-   scan(i).rotation = fscanf(fid, ' r=%f %f %f %f',4);
-   fgetl(fid);
-   i = i + 1;
+for i=1:length(scan)
+   fprintf(fid, '%s: ', scan(i).type);
+   fprintf(fid, 't=%ld ', scan(i).timestamp);
+   fprintf(fid, 'n="%s" ', scan(i).name);
+   fprintf(fid, 'a=%s ', scan(i).address);
+   fprintf(fid, 'v=%.1f ', scan(i).value);
+   fprintf(fid, 'p=%.18f %.18f %.18f ', scan(i).position);
+   fprintf(fid, 'r=%.18f %.18f %.18f %.18f ', scan(i).rotation);
+   fprintf(fid, 'u=%s\n', scan(i).uuid);
 end
 
 fclose(fid);

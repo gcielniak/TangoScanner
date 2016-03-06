@@ -8,11 +8,10 @@ beacons = read_beacon_settings(beacon_file_name);
 scan = read_log(file_name);
 aerr = [];
 aper = [];
-timeout_period = 1000000;
 
-for alpha=0.0:0.1:1.0
+for alpha=0.2%0.025:0.025:0.3
 nn=1;
-for N = 1:4:40
+for N = 12%10:16
 output = [];
 current_scan = [];
 past_readings = [];
@@ -49,43 +48,19 @@ for i=1:size(scan,2)
     else
         current_scan(ind).value = current_scan(ind).value*(1-alpha) + scan(i).value*alpha;            
     end
-    
-    %remove old scans
-    for j=length(current_scan):-1:1
-        if (scan(i).timestamp - current_scan(j).timestamp) > timeout_period
-            current_scan(j) = [];
-        end
+   
+    scale = 5;
+    im = zeros(50*scale,50*scale);
+    for j=1:length(current_scan)
+        ind = find(strcmp({beacons.address},current_scan(j).address));
+        x = beacons(ind).position(1)+20;
+        y = beacons(ind).position(2)+20;
+        r = (-current_scan(j).value)*0.1;
+        im = add_centroid(im,x*scale,y*scale,r*scale,2*scale);
     end
-        
-    %select max
-    [v, max_index] = max([current_scan.value]);
-    
-    %select the most frequent in N frames
-    b_count = zeros(size(beacons));
-    
-    %update the list of N last detections
-    b_ind = find(strcmp({beacons.address},current_scan(max_index).address));
-    past_readings = [past_readings b_ind];
-    if length(past_readings) > N
-        past_readings(1) = [];
-    end
-       
-    for j=1:length(past_readings)
-        b_count(past_readings(j)) = b_count(past_readings(j)) + 1;
-    end
-    
-    [v, max_b] = find(b_count,1);    
-%    output(k,1) = find(strcmp({beacons.address},current_scan(max_index).address));   
-    output(k,1) = max_b;   
-    output(k,3) = sqrt(sum((beacons(output(k,1)).position-beacons(output(k,2)).position).^2));
-    k = k + 1;
+    imshow(im,[]);
+    pause(0.1);
 end
-avg_error = sum(output(:,3))/size(output,1);
-100*length(find(output(:,3)==0))/size(output,1);
-aerr(nn,aa) = avg_error;
-aper(nn,aa) = 100*length(find(output(:,3)==0))/size(output,1);
-subplot(2,1,1); plot(output(:,1:2));
-subplot(2,1,2); plot(output(:,3));
 nn = nn + 1
 end
 aa = aa + 1
