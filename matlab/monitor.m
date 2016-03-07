@@ -6,12 +6,13 @@ file_names = dir([path,'wifi_bt_log_*.txt']);
 
 file_name = file_names(3).name;
 
-map = imresize(imread([path, 'Bestways_map.png']),0.5);
+%map = imresize(imread([path, 'Bestways_map.png']),0.5);
 scale = size(map,2)/95.56;
 
 beacons = read_beacon_settings([path, 'beacon_settings.txt']);
 
 data = read_log([path, file_name]);
+
 figure;
 axis equal;
 axis([0 80 0 100]);
@@ -29,8 +30,8 @@ for i = 1:length(data)
     detected = 0;
     for j=1:length(beacons)
        if strcmp(data(i).uuid,beacons(j).uuid) || strcmp(data(i).address,beacons(j).address)
-            assoc(i).uuid = beacons(j).uuid;
-            assoc(i).name = beacons(j).name;
+            assoc(i).uuid = data(i).uuid;
+            assoc(i).name = data(i).name;
             assoc(i).address = data(i).address;
             norm_reading = min((105 + data(i).value),30)/30;
             alpha = (norm_reading*0.8)^5;
@@ -53,13 +54,11 @@ for i = 1:length(data)
 end
 hold off;
 
-min([data.value])
-max([data.value])
-
 if 0
 %%
-un = unique({assoc.name});
-ua = unique({assoc.address});
+[un, ia] = unique({assoc.name});
+un = {assoc(ia).name};
+ua = {assoc(ia).address};
 uu = [un;ua]';
 
 for i = 1:length(uu)

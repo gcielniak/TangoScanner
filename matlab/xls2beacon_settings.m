@@ -1,13 +1,13 @@
-%beacon location from exel
-%variable name has to be beacon_layout
+%convert beacon settings from excel file
+path = 'H:\gcielniak\Google Drive (work)\beacon_logs\';
+xls_filename = 'BestwayLeicesterNavigationBeacons - v4.xlsx';
+output_filename = 'beacon_settings.txt';
 
-fid = fopen('beacon_settings.txt','w+');
+[num, txt, raw] = xlsread([path xls_filename]);
+beacon_layout = raw(2:136,1:9);    
 
-if fid == -1
-    fprintf('Could not open the specified file.');
-    return;
-end
-    
+fid = fopen([path output_filename],'w+');
+
 fprintf(fid, '#set beacon location in meters\n');
 for i=1:size(beacon_layout,1)
     label = beacon_layout{i,3};
