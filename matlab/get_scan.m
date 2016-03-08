@@ -1,4 +1,4 @@
-function scan = get_scan(data, time_interval)
+function scan = get_scan(data, time_interval, alpha)
 
 scan{1}{1} = data(1);
 
@@ -13,7 +13,9 @@ for i = 2:length(data)
     add = {s.address};
     ind = find(strcmp(add,data(i).address));
     if ind
+        old_value = scan{i}{ind}.value;
         scan{i}{ind} = data(i);
+        scan{i}{ind}.value = scan{i}{ind}.value*alpha + old_value*(1-alpha);
     else
         scan{i}{length(scan{i})+1} = data(i);        
     end
