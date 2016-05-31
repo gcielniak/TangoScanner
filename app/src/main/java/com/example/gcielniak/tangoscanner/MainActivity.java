@@ -2,6 +2,12 @@ package com.example.gcielniak.tangoscanner;
 
 import java.util.ArrayList;
 
+import com.gcielniak.scannerlib.OnReadingListener;
+import com.gcielniak.scannerlib.Pose;
+import com.gcielniak.scannerlib.Reading;
+import com.gcielniak.scannerlib.ReadingLog;
+import com.gcielniak.scannerlib.WifiScanner;
+import com.gcielniak.scannerlib.BluetoothScanner;
 import com.google.atap.tangoservice.Tango;
 import com.google.atap.tangoservice.Tango.OnTangoUpdateListener;
 import com.google.atap.tangoservice.TangoConfig;
@@ -44,11 +50,11 @@ public class MainActivity extends Activity {
     private boolean mIsTangoServiceConnected;
     private boolean mIsProcessing = false;
 
-    ScanLogger scan_logger;
+    ReadingLog reading_log;
+    OnReadingListener listener;
     WifiScanner wifi_scanner;
     BluetoothScanner bluetooth_scanner;
     boolean tango_init_phase = false;
-    OnScanListener listener;
     TangoPoseData current_pose;
 
     @Override
@@ -77,15 +83,15 @@ public class MainActivity extends Activity {
             Log.i(TAG, "Could not find the Tango");
         }
 
-        scan_logger = new ScanLogger();
+        reading_log = new ReadingLog();
 
         //WIFI stuff
-        wifi_scanner = new WifiScanner(this, scan_logger);
+        wifi_scanner = new WifiScanner(this, reading_log);
 
         //BT stuff
-        bluetooth_scanner = new BluetoothScanner(scan_logger);
+        bluetooth_scanner = new BluetoothScanner(reading_log);
 
-        listener = scan_logger;
+        listener = reading_log;
     }
 
     @Override
@@ -162,8 +168,12 @@ public class MainActivity extends Activity {
                 }
                 mIsProcessing = true;
 
-                wifi_scanner.UpdatePose(pose);
-                bluetooth_scanner.UpdatePose(pose);
+                Pose p = new Pose();
+                p.translation = pose.translation;
+                p.rotation = pose.rotation;
+
+                wifi_scanner.UpdatePose(p);
+                bluetooth_scanner.UpdatePose(p);
                 current_pose = pose;
 
                 // Format Translation and Rotation data
@@ -185,14 +195,14 @@ public class MainActivity extends Activity {
                 // service thread
 
                 if (!btToggleButton.isChecked() && !wifiToggleButton.isChecked()) {
-                    Scan scan = new Scan();
-                    scan.mac_address = "";
-                    scan.device_type = DeviceType.NO_DEVICE;
-                    scan.translation = current_pose.translation;
-                    scan.rotation = current_pose.rotation;
-                    scan.timestamp = (long)(current_pose.timestamp*1000);
+                    Reading reading = new Reading();
+                    reading.setMacAddress("");
+                    reading.device_type = Reading.DeviceType.NO_DEVICE;
+                    reading.translation = current_pose.translation;
+                    reading.rotation = current_pose.rotation;
+                    reading.timestamp = (long)(current_pose.timestamp*1000);
 
-                    listener.onScan(scan);
+                    listener.onReading(reading);
                 }
 
                 runOnUiThread(new Runnable() {
@@ -236,7 +246,7 @@ public class MainActivity extends Activity {
                     tango_init_phase = true;
                 }
 
-                scan_logger.Start();
+                reading_log.Start();
 
                 //wifi
                 if (wifiToggleButton.isChecked())
@@ -259,7 +269,7 @@ public class MainActivity extends Activity {
                     }
                 }
 
-                scan_logger.Stop(MainActivity.this);
+                reading_log.Stop(MainActivity.this);
 
                 //wifi
                 if (wifiToggleButton.isChecked())

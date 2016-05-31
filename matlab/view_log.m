@@ -1,7 +1,7 @@
 %generate figures
 
 path = 'H:\gcielniak\Google Drive (work)\beacon_logs\Bestways Feb 2016\';
-path = '/Users/gcielniak/Google Drive (work)/beacon_logs/Bestways Feb 2016/';
+%path = '/Users/gcielniak/Google Drive (work)/beacon_logs/Bestways Feb 2016/';
 
 
 file_names = dir([path,'wifi_bt_log_*.txt']);
@@ -16,14 +16,14 @@ beacons = read_beacon_settings([path, 'beacon_settings.txt']);
 data = read_log([path, file_name]);
 fprintf('%s\n',file_name);
 
-for t = 1:3
-    for alpha = 0.1:0.1:1
+for t = 2%1:3
+    for alpha = 0.5%0.1:0.1:1
 scan = get_scan(data, t, alpha);
 pos = [data(:).position];
 pos = pos(1:2,:);
 
 out_pos = [];
-vis = 0;
+vis = 1;
 
 for i = 1:length(scan)
     if vis

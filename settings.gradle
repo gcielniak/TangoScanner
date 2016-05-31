@@ -1,1 +1,2 @@
 include ':app', ':TangoSDK_Weyl_Java'
+include ':app', '..:ScannerLib:scanner_lib'
